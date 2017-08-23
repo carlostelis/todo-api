@@ -166,26 +166,35 @@ app.post('/users', (req, res) => {
 });
 
 app.post('/users/login', (req, res) => {
-    var body = _.pick(req.body, 'email', 'password');
-    console.log(body);
-    console.log("asd");
+    let body = _.pick(req.body, 'email', 'password');
+    let userInstance;
 
     db.user.autenticar(body).then((user) => {
         let token = user.generarToken('autenticacion');
-        console.log("token " + token);
-        if (token) {
-            res.header('Auth', token).json(user.toPublicJSON());
-        } else {
-            res.status(401).send();
-        }
+        userInstance = user;
 
-    }, (error) => {
+        return db.token.create({
+            token: token
+        });
+    }).then((tokenInstance) => {
+        res.header('Auth', tokenInstance.get('token')).json(userInstance.toPublicJSON());
+    }).catch((error) => {
         console.log(error);
         res.status(401).send();
     });
 });
 
-db.sequelize.sync().then(() => {
+app.delete('/users/login', middleware.requiereAutenticacion, (req, res) => {
+    req.token.destroy().then(() => {
+        res.status(204).send();
+    }).catch(() => {
+        res.status(500).send();
+    });
+});
+
+db.sequelize.sync({
+    //force:true
+}).then(() => {
     app.listen(PORT, function() {
         console.log(`Express escuchando en puerto ${PORT}`);
     });
