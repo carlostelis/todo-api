@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const _ = require('underscore');
 const db = require('./db.js');
 const bcrypt = require('bcryptjs');
+const middleware = require('./middleware.js')(db);
+
 let todos = [];
 let todoNextId = 1;
 
@@ -14,7 +16,7 @@ app.get('/', function(req, res) {
     res.send('Todo API root');
 });
 
-app.get('/todos', function(req, res) {
+app.get('/todos', middleware.requiereAutenticacion, function(req, res) {
     var queryParams = req.query;
     var whereObj = {};
     if (queryParams.hasOwnProperty('completado') && queryParams.completado === 'true') {
@@ -42,29 +44,9 @@ app.get('/todos', function(req, res) {
         console.log(error);
         res.status(404).send();
     });
-
-
-
-    // SIN BASE DE DATOS
-    //
-    // var filtrados = todos;
-    // if (queryParams.hasOwnProperty('completado') && queryParams.completado === 'true') {
-    //     filtrados = _.where(filtrados, {completado: true});
-    // } else if (queryParams.hasOwnProperty('completado') && queryParams.completado === 'false') {
-    //     filtrados = _.where(filtrados, {completado: false});
-    // }
-    //
-    // if (queryParams.hasOwnProperty('q')) {
-    //     filtrados = _.filter(filtrados, function(todo) {
-    //         return todo.descripcion.toLowerCase().includes(queryParams.q.toLowerCase());
-    //     });
-    // }
-    //
-    // // json() se encarga de decidir si usar parse o stringify para enviar
-    // res.json(filtrados);
 });
 
-app.get('/todos/:id', function(req, res) {
+app.get('/todos/:id', middleware.requiereAutenticacion, function(req, res) {
     let todoId = parseInt(req.params.id);
     console.log(`Pidiendo ${todoId}`);
 
@@ -79,21 +61,9 @@ app.get('/todos/:id', function(req, res) {
     }).catch((error) => {
         res.status(404).send();
     });
-
-
-    // SIN BASE DE DATOS
-    //
-    // retorna el primer elemento que coincide
-    // var matched = _.findWhere(todos, {id: parseInt(req.params.id)});
-    // console.log(matched);
-    // if (matched) {
-    //     res.json(matched);
-    // }
-    // // Recurso no encontrado
-    // res.status(404).send();
 });
 
-app.post('/todos', function(req, res) {
+app.post('/todos', middleware.requiereAutenticacion, middleware.requiereAutenticacion, function(req, res) {
     var body = _.pick(req.body, 'completado', 'descripcion');
     console.log(body);
 
@@ -105,25 +75,9 @@ app.post('/todos', function(req, res) {
         console.log(error);
         res.status(400).json(error);
     });
-
-
-
-    //  SIN BASE DE DATOS
-    //
-    // if (!_.isBoolean(body.completado) || !_.isString(body.descripcion) || body.descripcion.trim().length === 0) {
-    //     return res.status(400).send();
-    // }
-    //
-    // body.descripcion = body.descripcion.trim();
-    //
-    // body.id = todoNextId++;
-    // todos.push(body);
-    //
-    // console.log(body);
-    // res.json(body);
 });
 
-app.delete('/todos/:id', function(req, res) {
+app.delete('/todos/:id', middleware.requiereAutenticacion, function(req, res) {
     var todoId = parseInt(req.params.id);
     var whereObj = {
         id: todoId
@@ -142,30 +96,9 @@ app.delete('/todos/:id', function(req, res) {
         console.log(error);
         res.status(404).send();
     });
-
-
-
-    // SIN BASE DE DATOS
-    //
-    // const idTodo = parseInt(req.params.id);
-    // console.log(`Borrando ${idTodo}`);
-    //
-    // // También se podía usar _.without
-    //
-    // var indice = _.findIndex(todos, function(todo) {
-    //     return todo.id === idTodo;
-    // });
-    // console.log(`Ìndice: ${indice}`);
-    //
-    // if (indice >= 0) {
-    //     return res.json(todos.splice(indice, 1));
-    // } else {
-    //     return res.status(404).send();
-    // }
-
 });
 
-app.put('/todos/:id', function(req, res) {
+app.put('/todos/:id', middleware.requiereAutenticacion, function(req, res) {
     var todoId = parseInt(req.params.id);
     var whereObj = {
         id: todoId
@@ -199,36 +132,6 @@ app.put('/todos/:id', function(req, res) {
         // Sintaxis inválida
         res.status(400).send();
     });
-
-
-    // SIN  BASE DE DATOS
-    //
-    // const idTodo = parseInt(req.params.id);
-    //
-    // var body = _.pick(req.body, 'completado', 'descripcion');
-    // var atributos = {};
-    //
-    // if (body.hasOwnProperty('completado') && _.isBoolean(body.completado)) {
-    //     atributos.completado = body.completado;
-    // } else if (body.hasOwnProperty('completado')) {
-    //     return res.status(404).send();
-    // }
-    //
-    // if (body.hasOwnProperty('descripcion') && _.isString(body.descripcion) && body.descripcion.trim().length > 0) {
-    //     atributos.descripcion = body.descripcion;
-    // } else if (body.hasOwnProperty('descripcion')) {
-    //     return res.status(404).send();
-    // }
-    //
-    // var matched = _.findWhere(todos, {id: parseInt(idTodo)});
-    // if (!matched) {
-    //     return res.status(404).send();
-    // }
-    //
-    // _.extend(matched, atributos);
-    //
-    // console.log(matched);
-    // return res.json(matched);
 });
 
 app.post('/users', (req, res) => {
@@ -263,26 +166,6 @@ app.post('/users/login', (req, res) => {
         console.log(error);
         res.status(401).send();
     });
-
-
-
-    // if (typeof body.email !== 'string' || typeof body.password !== 'string') {
-    //     return res.status(400).send();
-    // }
-    //
-    // let User = db.user;
-    // User.findOne({where: {
-    //     email: body.email
-    // }}).then((user) => {
-    //     // compareSync regresa true si hay diferencias
-    //     if (!user || bcrypt.compareSync(body.password, user.get('password_hash'))) {
-    //         res.json(user.toPublicJSON());
-    //     }
-    //
-    //     res.status(401).send();
-    // }, (error) => {
-    //     res.status(400).send();
-    // });
 });
 
 db.sequelize.sync().then(() => {
