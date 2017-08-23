@@ -18,7 +18,8 @@ app.get('/', function(req, res) {
 
 app.get('/todos', middleware.requiereAutenticacion, function(req, res) {
     var queryParams = req.query;
-    var whereObj = {};
+    var whereObj = { userId: req.user.get('id')};
+
     if (queryParams.hasOwnProperty('completado') && queryParams.completado === 'true') {
         whereObj.completado = true;
     } else if (queryParams.hasOwnProperty('completado') && queryParams.completado === 'false') {
@@ -51,7 +52,12 @@ app.get('/todos/:id', middleware.requiereAutenticacion, function(req, res) {
     console.log(`Pidiendo ${todoId}`);
 
     const Todo = db.todo;
-    Todo.findById(todoId).then((todo) => {
+    Todo.findOne({
+        where: {
+            id: todoId,
+            userId: req.user.get('id')
+        }
+    }).then((todo) => {
         if (!!todo) {
             console.log(todo.toJSON());
             res.send(todo.toJSON());
@@ -83,12 +89,14 @@ app.post('/todos', middleware.requiereAutenticacion, middleware.requiereAutentic
 
 app.delete('/todos/:id', middleware.requiereAutenticacion, function(req, res) {
     var todoId = parseInt(req.params.id);
-    var whereObj = {
-        id: todoId
-    };
 
     const Todo = db.todo;
-    Todo.destroy( {where : whereObj }).then((borrados) => {
+    Todo.destroy( {
+        where : {
+            id: todoId,
+            userId: req.user.get('id')
+        }
+    }).then((borrados) => {
         console.log(`Borrados: ${borrados}`);
         if (borrados > 0) {
             res.json(borrados);
@@ -120,7 +128,12 @@ app.put('/todos/:id', middleware.requiereAutenticacion, function(req, res) {
     }
 
     const Todo = db.todo;
-    Todo.findById(todoId).then((todo) => {
+    Todo.findOne({
+        where: {
+            id: todoId,
+            userId: req.user.get('id')
+        }
+    }).then((todo) => {
         if (todo) {
             // Update se realiza sobre cada objeto encontrado,
             // en vez de en una sola consulta para todos
