@@ -70,7 +70,11 @@ app.post('/todos', middleware.requiereAutenticacion, middleware.requiereAutentic
     let Todo = db.todo;
 
     Todo.create(body).then((todo) => {
-        res.json(body);
+        req.user.addTodo(todo).then(() => {
+            return todo.reload();
+        }).then((todo) => {
+            res.json(todo.toJSON());
+        });
     }).catch((error) => {
         console.log(error);
         res.status(400).json(error);
@@ -151,11 +155,11 @@ app.post('/users', (req, res) => {
 app.post('/users/login', (req, res) => {
     var body = _.pick(req.body, 'email', 'password');
     console.log(body);
-
+    console.log("asd");
 
     db.user.autenticar(body).then((user) => {
         let token = user.generarToken('autenticacion');
-
+        console.log("token " + token);
         if (token) {
             res.header('Auth', token).json(user.toPublicJSON());
         } else {

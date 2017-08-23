@@ -19,44 +19,40 @@ var Todo = sequelize.define('todo', {
     }
 });
 
-sequelize.sync(/*{force: true}*/).then(() => {
+const User = sequelize.define('user', {
+    email: Sequelize.STRING
+});
+
+// Relaciones, crea llaves foráneas
+
+// Un todo pertenece a un usuario
+Todo.belongsTo(User)
+// un usuario tiene muchos todos
+User.hasMany(Todo);
+
+sequelize.sync({
+    //force: true
+}).then(() => {
     console.log('Everything is synced');
 
-    Todo.findById(2).then((todo) => {
-        if (todo) {
-            console.log(todo.toJSON());
-        } else {
-            console.log('No encontrado');
-        }
+    User.findById(1).then((user) => {
+        // Crea métodos get para el tipo de objeto
+        user.getTodos({ where: { completado: false }}).then((todos) => {
+            todos.forEach((todo) => {
+                console.log(todo.toJSON());
+            });
+        });
     });
 
-
-    // Todo.create({
-    //     descripcion: 'Caminar con el perro',
-    //     completado: false
-    // }).then((todo) => {
+    // User.create({
+    //     email: 'carlos.telis@outlook.com'
+    // }).then(() => {
     //     return Todo.create({
-    //         descripcion: 'Limpiar el cuarto',
-    //         completado: true
-    //     }).then(() => {
-    //         //return Todo.findById(1);
-    //         return Todo.findAll({
-    //             where: {
-    //                 descripcion: {
-    //                     $like: '%cuarto%'
-    //                 }
-    //             }
-    //         });
-    //     }).then((todos) => {
-    //         if (todos) {
-    //             todos.forEach((todo) => {
-    //                 console.log(todo.toJSON());
-    //             });
-    //         } else {
-    //             console.log('No encontrado');
-    //         }
+    //         descripcion: 'Limpiar jardin'
     //     });
-    // }).catch((error) => {
-    //     console.log(error);
+    // }).then((todo) => {
+    //     User.findById(1).then((user) => {
+    //         user.addTodo(todo); // Crea métodos get para el tipo de objeto
+    //     });
     // });
 });
